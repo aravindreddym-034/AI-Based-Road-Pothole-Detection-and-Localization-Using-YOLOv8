@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# YOLO Dataset Caches & Runs
+*.cache
+outputs/
