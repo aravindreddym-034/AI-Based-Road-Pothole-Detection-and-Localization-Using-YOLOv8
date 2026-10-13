@@ -226,25 +226,97 @@ with tab_video:
         tfile.write(uploaded_vid.read())
         tfile_path = tfile.name
 
+        st.subheader("Source Video")
         st.video(tfile_path)
 
+        output_vid_path = os.path.join("outputs", f"tracked_{Path(uploaded_vid.name).stem}.mp4")
+        session_vid_key = f"vid_result_{uploaded_vid.name}"
+
         if st.button("🚀 Run Multi-Object Pothole Tracking", type="primary"):
+            import importlib
+            import track
+            importlib.reload(track)
             from track import PotholeTracker
             tracker = PotholeTracker()
 
-            output_vid_path = os.path.join("outputs", f"tracked_{Path(uploaded_vid.name).stem}.mp4")
-            with st.spinner("Processing video frames with ByteTrack..."):
-                t_res = tracker.process_video(
-                    video_path=tfile_path,
-                    output_path=output_vid_path,
-                    conf_threshold=conf_slider
-                )
+            prog_bar = st.progress(0.0)
+            status_text = st.empty()
+            preview_container = st.empty()
+
+            def st_progress_cb(frame_idx, total_frames, cur_fps, unique_count, current_frame):
+                pct = min(1.0, max(0.0, (frame_idx + 1) / max(1, total_frames)))
+                prog_bar.progress(pct)
+                status_text.markdown(f"⏳ **Frame {frame_idx + 1} / {total_frames}** ({cur_fps:.1f} FPS) — Detected **{unique_count}** unique potholes so far...")
+                if frame_idx % 20 == 0 and current_frame is not None:
+                    rgb_preview = cv2.cvtColor(current_frame, cv2.COLOR_BGR2RGB)
+                    preview_container.image(rgb_preview, caption=f"Live Detection Preview — Frame {frame_idx + 1}", use_container_width=True)
+
+            with st.spinner("Processing video frames and applying ByteTrack..."):
+                try:
+                    t_res = tracker.process_video(
+                        video_path=tfile_path,
+                        output_path=output_vid_path,
+                        conf_threshold=conf_slider,
+                        progress_callback=st_progress_cb
+                    )
+                except TypeError:
+                    # Fallback in case of cached module signature discrepancy
+                    t_res = tracker.process_video(
+                        video_path=tfile_path,
+                        output_path=output_vid_path,
+                        conf_threshold=conf_slider
+                    )
+
+            prog_bar.empty()
+            status_text.empty()
+            preview_container.empty()
+
+            st.session_state[session_vid_key] = {
+                "t_res": t_res,
+                "output_vid_path": output_vid_path
+            }
+
+        # If previous results exist for this uploaded video file or was in outputs
+        if session_vid_key in st.session_state:
+            result_data = st.session_state[session_vid_key]
+            t_res = result_data["t_res"]
+            out_path = result_data["output_vid_path"]
 
             st.success(f"Processing Complete! Identified **{t_res['unique_potholes_count']} unique potholes** across {t_res['total_frames']} frames ({t_res['average_fps']} FPS).")
 
-            if os.path.exists(output_vid_path):
-                st.subheader("Processed Video Output")
-                st.video(output_vid_path)
+            if os.path.exists(out_path):
+                st.subheader("📹 Processed Video Output (H.264 Web Stream)")
+                with open(out_path, "rb") as vf:
+                    video_bytes = vf.read()
+
+                st.video(video_bytes, format="video/mp4")
+
+                col_dl, col_blank = st.columns([1, 2])
+                with col_dl:
+                    st.download_button(
+                        label="⬇️ Download Processed Video (MP4)",
+                        data=video_bytes,
+                        file_name=os.path.basename(out_path),
+                        mime="video/mp4",
+                        use_container_width=True
+                    )
+
+                if t_res.get("pothole_summary"):
+                    st.subheader("📊 Tracked Potholes Inventory")
+                    p_df = pd.DataFrame(t_res["pothole_summary"])
+                    if not p_df.empty:
+                        sev_counts = p_df["severity"].value_counts()
+                        m1, m2, m3, m4 = st.columns(4)
+                        m1.metric("Total Unique Potholes", len(p_df))
+                        m2.metric("Critical Hazards", int(sev_counts.get("Critical", 0)))
+                        m3.metric("Moderate Hazards", int(sev_counts.get("Moderate", 0)))
+                        m4.metric("Minor Potholes", int(sev_counts.get("Minor", 0)))
+
+                        p_df_display = p_df.copy()
+                        p_df_display["max_conf"] = (p_df_display["max_conf"] * 100).round(1).astype(str) + "%"
+                        p_df_display["area_ratio"] = (p_df_display["area_ratio"] * 100).round(2).astype(str) + "% of frame"
+                        p_df_display.columns = ["Track ID", "First Detected Frame", "Max Confidence", "Severity Tier", "Relative Area"]
+                        st.dataframe(p_df_display, use_container_width=True)
 
 # -------------------------------------------------------------
 # TAB 3: GEOSPATIAL MAP
