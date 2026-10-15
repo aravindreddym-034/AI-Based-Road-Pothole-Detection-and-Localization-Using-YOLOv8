@@ -33,50 +33,180 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.2rem;
-    }
-    .sub-header {
-        font-size: 1.05rem;
-        color: #64748b;
-        margin-bottom: 1.5rem;
-    }
-    .metric-card {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 1rem;
-        text-align: center;
-    }
-    .badge-critical {
-        background-color: #fee2e2;
-        color: #b91c1c;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-    .badge-moderate {
-        background-color: #ffedd5;
-        color: #c2410c;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-    .badge-minor {
-        background-color: #fef9c3;
-        color: #854d0e;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Theme State Management
+if "app_theme" not in st.session_state:
+    st.session_state["app_theme"] = "dark"
+
+is_dark = st.session_state["app_theme"] == "dark"
+
+# Dynamic Theme Styling
+if is_dark:
+    theme_css = """
+    <style>
+        .stApp {
+            background-color: #0b0f19 !important;
+            color: #f1f5f9 !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #070a12 !important;
+            border-right: 1px solid #1e293b !important;
+        }
+        header[data-testid="stHeader"] {
+            background-color: #0b0f19 !important;
+        }
+        .main-header {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #f8fafc !important;
+            margin-bottom: 0.2rem;
+        }
+        .sub-header {
+            font-size: 1.05rem;
+            color: #94a3b8 !important;
+            margin-bottom: 1.5rem;
+        }
+        .metric-card {
+            background-color: #161e2e !important;
+            border: 1px solid #233044 !important;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            color: #f8fafc !important;
+        }
+        div[data-testid="stMetric"] {
+            background-color: #161e2e !important;
+            border: 1px solid #233044 !important;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        div[data-testid="stMetricValue"] {
+            color: #f8fafc !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #94a3b8 !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #131b2e !important;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #94a3b8 !important;
+        }
+        .stTabs [aria-selected="true"] {
+            color: #38bdf8 !important;
+            font-weight: 600;
+        }
+        .badge-critical {
+            background-color: #450a0a !important;
+            color: #fca5a5 !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #7f1d1d;
+        }
+        .badge-moderate {
+            background-color: #431407 !important;
+            color: #fdba74 !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #7c2d12;
+        }
+        .badge-minor {
+            background-color: #422006 !important;
+            color: #fde047 !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid #713f12;
+        }
+    </style>
+    """
+else:
+    theme_css = """
+    <style>
+        .stApp {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0 !important;
+        }
+        header[data-testid="stHeader"] {
+            background-color: #f8fafc !important;
+        }
+        .main-header {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #0f172a !important;
+            margin-bottom: 0.2rem;
+        }
+        .sub-header {
+            font-size: 1.05rem;
+            color: #64748b !important;
+            margin-bottom: 1.5rem;
+        }
+        .metric-card {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            color: #0f172a !important;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+        div[data-testid="stMetric"] {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+        div[data-testid="stMetricValue"] {
+            color: #0f172a !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #64748b !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #e2e8f0 !important;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #475569 !important;
+        }
+        .stTabs [aria-selected="true"] {
+            color: #0284c7 !important;
+            font-weight: 600;
+        }
+        .badge-critical {
+            background-color: #fee2e2 !important;
+            color: #b91c1c !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .badge-moderate {
+            background-color: #ffedd5 !important;
+            color: #c2410c !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .badge-minor {
+            background-color: #fef9c3 !important;
+            color: #854d0e !important;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
+    """
+
+st.markdown(theme_css, unsafe_allow_html=True)
 
 
 @st.cache_resource
@@ -91,6 +221,20 @@ detector = load_detector()
 st.sidebar.image("https://img.icons8.com/fluency/96/road.png", width=64)
 st.sidebar.title("Configuration")
 st.sidebar.markdown("**IDP Capstone Project**  \n*Vignan's University*")
+
+# Theme Mode Selector in Sidebar
+st.sidebar.markdown("### 🌓 Display Theme")
+theme_col_dark, theme_col_light = st.sidebar.columns(2)
+with theme_col_dark:
+    if st.button("🌙 Dark", use_container_width=True, type="primary" if is_dark else "secondary"):
+        st.session_state["app_theme"] = "dark"
+        st.rerun()
+with theme_col_light:
+    if st.button("☀️ White", use_container_width=True, type="primary" if not is_dark else "secondary"):
+        st.session_state["app_theme"] = "light"
+        st.rerun()
+
+st.sidebar.divider()
 
 conf_slider = st.sidebar.slider(
     "Confidence Threshold",
